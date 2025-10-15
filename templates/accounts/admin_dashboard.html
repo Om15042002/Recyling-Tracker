@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - Recycling Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+            <p class="text-muted">Manage users, recycling centers, and system settings</p>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Total Users</h5>
+                            <h2 class="mb-0">{{ stats.total_users }}</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Active Centers</h5>
+                            <h2 class="mb-0">{{ stats.active_centers }}</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-recycle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Pending Requests</h5>
+                            <h2 class="mb-0">{{ stats.pending_requests }}</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Staff Members</h5>
+                            <h2 class="mb-0">{{ stats.staff_users }}</h2>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-tie fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'manage_users' %}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-users"></i> Manage Users
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'manage_centers' %}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-building"></i> Manage Centers
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'create_center' %}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-plus"></i> Create Center
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="#" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-chart-bar"></i> System Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Users -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-user-plus"></i> Recent Users</h5>
+                    <a href="{% url 'manage_users' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_users %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Type</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in recent_users %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ user.username }}</strong>
+                                            {% if user.first_name %}
+                                                <br><small class="text-muted">{{ user.first_name }} {{ user.last_name }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if user.userprofile.user_type == 'admin' %}bg-danger
+                                                {% elif user.userprofile.user_type == 'staff' %}bg-warning
+                                                {% else %}bg-info{% endif %}">
+                                                {{ user.userprofile.get_user_type_display }}
+                                            </span>
+                                        </td>
+                                        <td><small>{{ user.date_joined|date:"M d, Y" }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent users</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Recycling Centers -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-building"></i> Recycling Centers</h5>
+                    <a href="{% url 'manage_centers' %}" class="btn btn-sm btn-outline-success">Manage</a>
+                </div>
+                <div class="card-body">
+                    {% if centers %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Staff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for center in centers %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ center.name }}</strong>
+                                            <br><small class="text-muted">{{ center.address|truncatechars:30 }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if center.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {% if center.is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{ center.staff_members.count }} staff
+                                            <a href="{% url 'assign_staff' center.id %}" class="btn btn-xs btn-outline-primary ms-1">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recycling centers created yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Requests -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Recent Recycling Requests</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_requests %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Material</th>
+                                        <th>Center</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in recent_requests %}
+                                    <tr>
+                                        <td>{{ request.user.username }}</td>
+                                        <td>{{ request.get_material_type_display }}</td>
+                                        <td>{{ request.recycling_center.name|default:"Not assigned" }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if request.status == 'pending' %}bg-warning
+                                                {% elif request.status == 'approved' %}bg-success
+                                                {% elif request.status == 'completed' %}bg-primary
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ request.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ request.created_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent requests</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
