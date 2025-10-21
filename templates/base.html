@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Recycling Tracker{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Custom CSS -->
+    <link
+      href="{% load static %}{% static 'css/style.css' %}"
+      rel="stylesheet"
+    />
+
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success fixed-top">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+          <i class="fas fa-recycle me-2"></i>EcoTracker
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'home' %}">
+                <i class="fas fa-home me-1"></i>Home
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'recycling_centers_list' %}">
+                <i class="fas fa-map-marker-alt me-1"></i>Find Centers
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'recycling_centers_map' %}">
+                <i class="fas fa-map me-1"></i>Map View
+              </a>
+            </li>
+            {% if user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'create_request' %}">
+                <i class="fas fa-plus me-1"></i>New Request
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'my_requests' %}">
+                <i class="fas fa-list me-1"></i>My Requests
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+
+          <ul class="navbar-nav">
+            {% if user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle position-relative"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fas fa-bell me-1"></i>
+                <span class="notification-badge" style="display: none">
+                  0
+                </span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'notifications_list' %}"
+                    >View All Notifications</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="mark-all-read"
+                    >Mark All as Read</a
+                  >
+                </li>
+              </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fas fa-user me-1"></i>{{ user.username }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'dashboard' %}"
+                    >Dashboard</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'profile' %}"
+                    >Profile</a
+                  >
+                </li>
+                {% if user.userprofile.user_type == 'staff' or
+                user.userprofile.user_type == 'admin' %}
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'staff_requests' %}"
+                    >Staff Panel</a
+                  >
+                </li>
+                {% endif %}
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <form
+                    method="post"
+                    action="{% url 'logout' %}"
+                    style="display: inline"
+                  >
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="dropdown-item"
+                      style="
+                        border: none;
+                        background: none;
+                        cursor: pointer;
+                        width: 100%;
+                        text-align: left;
+                      "
+                    >
+                      <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </button>
+                  </form>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'login' %}">
+                <i class="fas fa-sign-in-alt me-1"></i>Login
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'register' %}">
+                <i class="fas fa-user-plus me-1"></i>Register
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-5 pt-4">
+      {% if messages %} {% for message in messages %}
+      <div
+        class="alert alert-{{ message.tags }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <h5><i class="fas fa-recycle me-2"></i>EcoTracker</h5>
+            <p>
+              Making recycling easy and accessible for everyone. Together, we
+              can create a sustainable future.
+            </p>
+          </div>
+          <div class="col-md-3">
+            <h6>Quick Links</h6>
+            <ul class="list-unstyled">
+              <li>
+                <a
+                  href="{% url 'recycling_centers_list' %}"
+                  class="text-light text-decoration-none"
+                  >Find Centers</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{% url 'recycling_centers_map' %}"
+                  class="text-light text-decoration-none"
+                  >Map View</a
+                >
+              </li>
+              {% if user.is_authenticated %}
+              <li>
+                <a
+                  href="{% url 'create_request' %}"
+                  class="text-light text-decoration-none"
+                  >New Request</a
+                >
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+          <div class="col-md-3">
+            <h6>Contact</h6>
+            <p><i class="fas fa-envelope me-2"></i>support@ecotracker.com</p>
+            <p><i class="fas fa-phone me-2"></i>+1 (555) 123-4567</p>
+          </div>
+        </div>
+        <hr />
+        <div class="text-center">
+          <p>&copy; 2024 EcoTracker. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{% load static %}{% static 'js/app.js' %}"></script>
+
+    {% if user.is_authenticated %}
+    <script>
+      // Check for unread notifications
+      function updateNotificationBadge() {
+        fetch('{% url "unread_count" %}')
+          .then((response) => response.json())
+          .then((data) => {
+            const badge = document.getElementById("notification-badge");
+            if (data.count > 0) {
+              badge.textContent = data.count;
+              badge.style.display = "inline";
+            } else {
+              badge.style.display = "none";
+            }
+          });
+      }
+
+      // Update notification badge on page load
+      updateNotificationBadge();
+
+      // Update every 30 seconds
+      setInterval(updateNotificationBadge, 30000);
+
+      // Mark all notifications as read
+      document
+        .getElementById("mark-all-read")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          fetch('{% url "mark_all_read" %}', {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          }).then(() => {
+            updateNotificationBadge();
+          });
+        });
+    </script>
+    {% endif %} {% block extra_js %}{% endblock %}
+  </body>
+</html>
