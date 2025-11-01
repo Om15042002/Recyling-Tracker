@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ center.name }} - EcoTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'recycling_centers_list' %}">Centers</a></li>
+                    <li class="breadcrumb-item active">{{ center.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                {% if center.image %}
+                    <img src="{{ center.image.url }}" class="card-img-top" style="height: 300px; object-fit: cover;" alt="{{ center.name }}">
+                {% else %}
+                    <div class="card-img-top bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 300px;">
+                        <i class="fas fa-recycle fa-5x text-success opacity-50"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h1 class="card-title h3 mb-0">{{ center.name }}</h1>
+                        <div class="text-end">
+                            <div class="d-flex align-items-center mb-1">
+                                <small class="text-muted me-2">Availability:</small>
+                                <span class="fw-bold">{{ center.availability_percentage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="progress" style="width: 100px; height: 8px;">
+                                <div class="progress-bar 
+                                    {% if center.availability_percentage >= 70 %}bg-success
+                                    {% elif center.availability_percentage >= 40 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    style="width: {{ center.availability_percentage }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="card-text text-muted mb-4">{{ center.description }}</p>
+                    
+                    <!-- Contact Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-success mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Contact Information
+                            </h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-map-marker-alt text-success me-2"></i>
+                                    <strong>Address:</strong><br>
+                                    <span class="ms-4">{{ center.address }}</span>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    <strong>Phone:</strong> 
+                                    <a href="tel:{{ center.phone_number }}" class="text-decoration-none">{{ center.phone_number }}</a>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-envelope text-success me-2"></i>
+                                    <strong>Email:</strong> 
+                                    <a href="mailto:{{ center.email }}" class="text-decoration-none">{{ center.email }}</a>
+                                </li>
+                                {% if center.website %}
+                                <li class="mb-2">
+                                    <i class="fas fa-globe text-success me-2"></i>
+                                    <strong>Website:</strong> 
+                                    <a href="{{ center.website }}" target="_blank" class="text-decoration-none">Visit Website</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="text-success mb-3">
+                                <i class="fas fa-clock me-2"></i>Operating Hours
+                            </h5>
+                            <p class="text-muted">{{ center.opening_hours|linebreaks }}</p>
+                            
+                            <h5 class="text-success mb-3 mt-4">
+                                <i class="fas fa-chart-bar me-2"></i>Capacity Info
+                            </h5>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="border rounded p-2">
+                                        <h6 class="text-success mb-1">{{ center.capacity }}</h6>
+                                        <small class="text-muted">Daily Capacity</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-2">
+                                        <h6 class="text-warning mb-1">{{ center.current_load }}</h6>
+                                        <small class="text-muted">Current Load</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Accepted Materials -->
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">
+                            <i class="fas fa-recycle me-2"></i>Accepted Materials
+                        </h5>
+                        {% if accepted_materials %}
+                            <div class="row">
+                                {% for material in accepted_materials %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card border-success border-opacity-25">
+                                            <div class="card-body p-3">
+                                                <h6 class="card-title text-success mb-2">
+                                                    <i class="fas fa-box me-1"></i>
+                                                    {{ material.get_material_type_display }}
+                                                </h6>
+                                                {% if material.description %}
+                                                    <p class="card-text small text-muted mb-0">{{ material.description }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Material acceptance information not available. Please contact the center directly.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="d-flex gap-2 flex-wrap mt-4">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'create_request' %}?center={{ center.id }}" class="btn btn-success btn-lg">
+                                <i class="fas fa-plus me-2"></i>Create Recycling Request
+                            </a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-success btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Create Request
+                            </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-success btn-lg" onclick="openDirections()">
+                            <i class="fas fa-directions me-2"></i>Get Directions
+                        </button>
+                        
+                        <button class="btn btn-outline-info btn-lg" onclick="shareCenter()">
+                            <i class="fas fa-share-alt me-2"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Map -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Location
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="centerMap" style="height: 250px; width: 100%;"></div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Click the map to open in full screen
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Quick Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-success mb-1">{{ accepted_materials.count }}</h4>
+                                <small class="text-muted">Material Types Accepted</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <h6 class="text-info mb-1">{{ center.staff_members.count }}</h6>
+                                <small class="text-muted">Staff Members</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <h6 class="text-warning mb-1">
+                                    {% if center.availability_percentage >= 70 %}High
+                                    {% elif center.availability_percentage >= 40 %}Medium
+                                    {% else %}Low{% endif %}
+                                </h6>
+                                <small class="text-muted">Availability</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Recycling Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Clean all containers before dropping off</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Remove labels and caps when possible</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Sort materials by type if required</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Check operating hours before visiting</small>
+                        </li>
+                        <li class="mb-0">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <small>Bring a valid ID if required</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet for map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = L.map('centerMap').setView([{{ center.latitude }}, {{ center.longitude }}], 15);
+    
+    // Add tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add marker
+    const marker = L.marker([{{ center.latitude }}, {{ center.longitude }}])
+        .addTo(map)
+        .bindPopup(`
+            <div>
+                <h6>{{ center.name }}</h6>
+                <p class="mb-1">{{ center.address }}</p>
+                <small class="text-muted">{{ center.phone_number }}</small>
+            </div>
+        `);
+    
+    // Open popup by default
+    marker.openPopup();
+    
+    // Make map clickable to open in full screen
+    map.on('click', function() {
+        window.open(`{% url 'recycling_centers_map' %}`, '_blank');
+    });
+});
+
+function openDirections() {
+    const address = encodeURIComponent('{{ center.address }}');
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${address}`;
+    window.open(url, '_blank');
+}
+
+function shareCenter() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ center.name }} - EcoTracker',
+            text: 'Check out this recycling center: {{ center.name }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+</script>
+{% endblock %}
