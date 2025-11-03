@@ -1,0 +1,302 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Staff Dashboard -
+Recycling Tracker{% endblock %} {% block content %}
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2><i class="fas fa-user-tie"></i> Staff Dashboard</h2>
+      <p class="text-muted">
+        Manage recycling requests for your assigned centers
+      </p>
+    </div>
+  </div>
+
+  {% if no_assignment %}
+  <!-- No Assignment Alert -->
+  <div class="row">
+    <div class="col-12">
+      <div class="alert alert-warning">
+        <h4>
+          <i class="fas fa-exclamation-triangle"></i> No Center Assignment
+        </h4>
+        <p>
+          You are not currently assigned to any recycling centers. Please
+          contact your administrator to get assigned to a center.
+        </p>
+        <p class="mb-0">
+          Once assigned, you will be able to manage recycling requests for your
+          centers.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title mb-0">Assigned Centers</h5>
+              <h2 class="mb-0">{{ stats.assigned_centers }}</h2>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-building fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title mb-0">Pending Requests</h5>
+              <h2 class="mb-0">{{ stats.pending_requests }}</h2>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-clock fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title mb-0">Approved</h5>
+              <h2 class="mb-0">{{ stats.approved_requests }}</h2>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-check fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="card-title mb-0">Completed</h5>
+              <h2 class="mb-0">{{ stats.completed_requests }}</h2>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-check-circle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Centers -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-building"></i> Your Assigned Centers</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for center in assigned_centers %}
+            <div class="col-md-6 col-lg-4 mb-3">
+              <div class="card border">
+                <div class="card-body">
+                  <h6 class="card-title">{{ center.name }}</h6>
+                  <p class="card-text text-muted small">
+                    {{ center.address|truncatechars:50 }}
+                  </p>
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <small class="text-muted">
+                      <i class="fas fa-phone"></i> {{ center.phone_number }}
+                    </small>
+                    <span
+                      class="badge {% if center.is_active %}bg-success{% else %}bg-secondary{% endif %}"
+                    >
+                      {% if center.is_active %}Active{% else %}Inactive{% endif
+                      %}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Requests Requiring Attention -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5>
+            <i class="fas fa-exclamation-circle text-warning"></i> Pending
+            Requests - Needs Action
+          </h5>
+          <span class="badge bg-warning"
+            >{{ stats.pending_requests }} pending</span
+          >
+        </div>
+        <div class="card-body">
+          {% if pending_requests %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>User</th>
+                  <th>Material Type</th>
+                  <th>Weight (kg)</th>
+                  <th>Center</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for request in pending_requests %}
+                <tr>
+                  <td><strong>#{{ request.id }}</strong></td>
+                  <td>
+                    {{ request.user.username }} {% if request.user.first_name %}
+                    <br /><small class="text-muted"
+                      >{{ request.user.first_name }} {{ request.user.last_name
+                      }}</small
+                    >
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-secondary"
+                      >{{ request.get_material_type_display }}</span
+                    >
+                  </td>
+                  <td>{{ request.weight_kg|floatformat:1 }} kg</td>
+                  <td>{{ request.recycling_center.name }}</td>
+                  <td>{{ request.created_at|date:"M d, Y H:i" }}</td>
+                  <td>
+                    <a
+                      href="{% url 'approve_request' request.id %}"
+                      class="btn btn-sm btn-success"
+                    >
+                      <i class="fas fa-check"></i> Review
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-check-circle fa-3x mb-3"></i>
+            <h5>All caught up!</h5>
+            <p>No pending requests requiring your attention at this time.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Requests -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-history"></i> Recent Requests (All Centers)</h5>
+        </div>
+        <div class="card-body">
+          {% if recent_requests %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>User</th>
+                  <th>Material</th>
+                  <th>Center</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for request in recent_requests %}
+                <tr>
+                  <td><strong>#{{ request.id }}</strong></td>
+                  <td>{{ request.user.username }}</td>
+                  <td>{{ request.get_material_type_display }}</td>
+                  <td>{{ request.recycling_center.name }}</td>
+                  <td>
+                    <span
+                      class="badge {% if request.status == 'pending' %}bg-warning {% elif request.status == 'approved' %}bg-success {% elif request.status == 'completed' %}bg-primary {% elif request.status == 'rejected' %}bg-danger {% else %}bg-secondary{% endif %}"
+                    >
+                      {{ request.get_status_display }}
+                    </span>
+                  </td>
+                  <td>{{ request.created_at|date:"M d, Y H:i" }}</td>
+                  <td>
+                    {% if request.status == 'pending' %}
+                    <a
+                      href="{% url 'approve_request' request.id %}"
+                      class="btn btn-sm btn-outline-success"
+                    >
+                      <i class="fas fa-eye"></i> Review
+                    </a>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted">No recent requests for your assigned centers</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .card {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .bg-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3) !important;
+  }
+  .bg-success {
+    background: linear-gradient(45deg, #28a745, #1e7e34) !important;
+  }
+  .bg-warning {
+    background: linear-gradient(45deg, #ffc107, #d39e00) !important;
+  }
+  .bg-info {
+    background: linear-gradient(45deg, #17a2b8, #117a8b) !important;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+  }
+</style>
+{% endblock %}
