@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Centers - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-building"></i> Manage Recycling Centers</h2>
+            <p class="text-muted">View and manage all recycling centers in the system</p>
+        </div>
+    </div>
+    
+    <!-- Search and Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" class="form-control" name="search" 
+                                       value="{{ search_query }}" placeholder="Search centers by name or address...">
+                                <button type="submit" class="btn btn-primary ms-2">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                {% if search_query %}
+                                <a href="{% url 'manage_centers' %}" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'create_center' %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Create New Center
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Centers List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Recycling Centers ({{ centers.paginator.count }} total)</h5>
+                </div>
+                <div class="card-body">
+                    {% if centers %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Center Name</th>
+                                        <th>Address</th>
+                                        <th>Contact</th>
+                                        <th>Capacity</th>
+                                        <th>Staff Assigned</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for center in centers %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ center.name }}</strong>
+                                            {% if center.website %}
+                                                <br><small>
+                                                    <a href="{{ center.website }}" target="_blank" class="text-primary">
+                                                        <i class="fas fa-external-link-alt"></i> Website
+                                                    </a>
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ center.address|truncatechars:50 }}
+                                            <br><small class="text-muted">
+                                                <i class="fas fa-map-marker-alt"></i> 
+                                                {{ center.latitude }}, {{ center.longitude }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <small>
+                                                <i class="fas fa-phone"></i> {{ center.phone_number }}<br>
+                                                <i class="fas fa-envelope"></i> {{ center.email }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="progress mb-1" style="height: 8px;">
+                                                <div class="progress-bar 
+                                                    {% if center.availability_percentage > 70 %}bg-success
+                                                    {% elif center.availability_percentage > 30 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ center.availability_percentage }}%"></div>
+                                            </div>
+                                            <small>{{ center.current_load }}/{{ center.capacity }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ center.staff_members.count }} staff</span>
+                                            <br><small>
+                                                <a href="{% url 'assign_staff' center.id %}" class="text-primary">
+                                                    <i class="fas fa-user-plus"></i> Manage
+                                                </a>
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if center.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {% if center.is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>{{ center.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown">
+                                                    <i class="fas fa-cog"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="fas fa-eye"></i> View Details
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="#">
+                                                        <i class="fas fa-edit"></i> Edit Center
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'assign_staff' center.id %}">
+                                                        <i class="fas fa-users"></i> Manage Staff
+                                                    </a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    {% if center.is_active %}
+                                                    <li><a class="dropdown-item text-warning" href="#">
+                                                        <i class="fas fa-pause"></i> Deactivate
+                                                    </a></li>
+                                                    {% else %}
+                                                    <li><a class="dropdown-item text-success" href="#">
+                                                        <i class="fas fa-play"></i> Activate
+                                                    </a></li>
+                                                    {% endif %}
+                                                    <li><a class="dropdown-item text-danger" href="#">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if centers.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                {% if centers.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ centers.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in centers.paginator.page_range %}
+                                    {% if centers.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > centers.number|add:'-3' and num < centers.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                                {{ num }}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if centers.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ centers.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            Next
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-building fa-3x mb-3"></i>
+                            <h5>No Centers Found</h5>
+                            {% if search_query %}
+                                <p>No recycling centers match your search criteria.</p>
+                                <a href="{% url 'manage_centers' %}" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-refresh"></i> Clear Search
+                                </a>
+                            {% else %}
+                                <p>No recycling centers have been created yet.</p>
+                            {% endif %}
+                            <a href="{% url 'create_center' %}" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Create First Center
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.progress {
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
