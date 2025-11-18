@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
+from django.contrib.auth.forms import UserCreationForm
+from .models import UserProfile
+
 
 def login_view(request):
     """Handle user login"""
@@ -19,3 +22,16 @@ def login_view(request):
             messages.error(request, "Invalid username or password.")
 
     return render(request, "accounts/login.html")
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        user_type = request.POST.get("user_type", "normal")
+        if form.is_valid():
+            user = form.save()
+            UserProfile.objects.create(user=user, user_type=user_type)
+            messages.success(request, f"Account created for {user.username}!")
+            return redirect("login")
+    else:
+        form = UserCreationForm()
+    return render(request, "accounts/register.html", {"form": form})
