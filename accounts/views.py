@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from .models import UserProfile
+from django.contrib.auth import logout
 
 
 def login_view(request):
@@ -35,3 +36,8 @@ def register(request):
     else:
         form = UserCreationForm()
     return render(request, "accounts/register.html", {"form": form})
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    return redirect("login")
