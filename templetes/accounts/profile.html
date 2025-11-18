@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - EcoTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="text-success mb-1">
+                        <i class="fas fa-user-circle me-2"></i>My Profile
+                    </h2>
+                    <p class="text-muted mb-0">Manage your account settings and view your recycling statistics</p>
+                </div>
+                <button class="btn btn-outline-success" onclick="toggleEditMode()">
+                    <i class="fas fa-edit me-1"></i>Edit Profile
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Personal Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="profileForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ user.first_name }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ user.last_name }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ user.username }}" readonly>
+                            </div>
+                        </div>
+                        
+                        {% if user.userprofile %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                       value="{{ user.userprofile.phone_number|default:'' }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="user_type" class="form-label">Account Type</label>
+                                <input type="text" class="form-control" id="user_type" 
+                                       value="{{ user.userprofile.get_user_type_display }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3" readonly>{{ user.userprofile.address|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="{{ user.userprofile.city|default:'' }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="postal_code" class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                                       value="{{ user.userprofile.postal_code|default:'' }}" readonly>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Save/Cancel buttons (hidden by default) -->
+                        <div class="d-none" id="editButtons">
+                            <hr>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="cancelEdit()">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-1"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Change Password -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock me-2"></i>Change Password
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'change_password' %}" id="passwordForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="old_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="old_password" name="old_password" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password1" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password2" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-key me-1"></i>Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Account Settings -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>Account Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'update_settings' %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-3">Notification Preferences</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="email_notifications" 
+                                           name="email_notifications" checked>
+                                    <label class="form-check-label" for="email_notifications">
+                                        Email notifications for request updates
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="sms_notifications" 
+                                           name="sms_notifications">
+                                    <label class="form-check-label" for="sms_notifications">
+                                        SMS notifications for urgent updates
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="newsletter" 
+                                           name="newsletter" checked>
+                                    <label class="form-check-label" for="newsletter">
+                                        Environmental newsletter
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-info mb-3">Privacy Settings</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="public_profile" 
+                                           name="public_profile">
+                                    <label class="form-check-label" for="public_profile">
+                                        Make my recycling stats public
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="location_sharing" 
+                                           name="location_sharing" checked>
+                                    <label class="form-check-label" for="location_sharing">
+                                        Share location for better center recommendations
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-save me-1"></i>Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Profile Stats -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Recycling Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <h3 class="text-success mb-1">{{ user.userprofile.total_items_recycled|default:0 }}</h3>
+                                <small class="text-muted">Items Recycled</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-success mb-1">{{ user.userprofile.total_weight_recycled|default:0|floatformat:1 }}</h3>
+                                <small class="text-muted">kg Recycled</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ user.userprofile.recycling_level_progress|default:0 }}%"></div>
+                    </div>
+                    <small class="text-muted">Level {{ user.userprofile.recycling_level|default:1 }} Eco Warrior</small>
+                    
+                    <hr>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h6 class="text-success mb-1">{{ total_requests }}</h6>
+                            <small class="text-muted">Total Requests</small>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-success mb-1">{{ completed_requests }}</h6>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-success mb-1">{{ pending_requests }}</h6>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Environmental Impact -->
+            <div class="card shadow-sm border-0 mb-4 bg-success text-white">
+                <div class="card-body text-center">
+                    <h6 class="mb-3">
+                        <i class="fas fa-leaf me-2"></i>Environmental Impact
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <h4>{{ user.userprofile.co2_saved|default:0|floatformat:1 }}</h4>
+                            <small>kg CO₂ Saved</small>
+                        </div>
+                        <div class="col-6">
+                            <h4>{{ user.userprofile.trees_saved|default:0|floatformat:1 }}</h4>
+                            <small>Trees Saved</small>
+                        </div>
+                    </div>
+                    <small class="d-block mt-2 opacity-75">
+                        Your contribution to a greener planet!
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Account Info -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Account Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <strong>Member since:</strong> {{ user.date_joined|date:"F Y" }}
+                        </li>
+                        <li class="mb-2">
+                            <strong>Last login:</strong> 
+                            {% if user.last_login %}
+                                {{ user.last_login|timesince }} ago
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </li>
+                        <li class="mb-2">
+                            <strong>Account status:</strong> 
+                            <span class="badge bg-success">Active</span>
+                        </li>
+                        <li class="mb-0">
+                            <strong>Verification:</strong> 
+                            {% if user.email %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Verified
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation me-1"></i>Pending
+                                </span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if user.recyclingrequest_set.all %}
+                        <div class="timeline-sm">
+                            {% for request in user.recyclingrequest_set.all|slice:":5" %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-{% if request.status == 'completed' %}success{% elif request.status == 'approved' %}info{% elif request.status == 'pending' %}warning{% else %}secondary{% endif %}"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">{{ request.created_at|timesince }} ago</small>
+                                    <p class="mb-0">{{ request.get_material_type_display }} request {{ request.get_status_display|lower }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'my_requests' %}" class="btn btn-outline-warning btn-sm">
+                                View All Requests
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p class="mb-0">No recent activity</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-sm {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timeline-sm::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1rem;
+    top: 0.25rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    font-size: 0.875rem;
+}
+
+@media (max-width: 992px) {
+    .col-lg-4 {
+        margin-top: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleEditMode() {
+    const form = document.getElementById('profileForm');
+    const inputs = form.querySelectorAll('input[readonly], textarea[readonly]');
+    const editButtons = document.getElementById('editButtons');
+    const toggleBtn = document.querySelector('[onclick="toggleEditMode()"]');
+    
+    // Skip username and user_type fields
+    const editableInputs = Array.from(inputs).filter(input => 
+        input.id !== 'username' && input.id !== 'user_type'
+    );
+    
+    if (editableInputs[0].hasAttribute('readonly')) {
+        // Enable edit mode
+        editableInputs.forEach(input => {
+            input.removeAttribute('readonly');
+            input.classList.add('border-warning');
+        });
+        editButtons.classList.remove('d-none');
+        toggleBtn.innerHTML = '<i class="fas fa-times me-1"></i>Cancel Edit';
+        toggleBtn.classList.remove('btn-outline-success');
+        toggleBtn.classList.add('btn-outline-danger');
+        toggleBtn.setAttribute('onclick', 'cancelEdit()');
+    }
+}
+
+function cancelEdit() {
+    const form = document.getElementById('profileForm');
+    const inputs = form.querySelectorAll('input, textarea');
+    const editButtons = document.getElementById('editButtons');
+    const toggleBtn = document.querySelector('[onclick="cancelEdit()"]');
+    
+    // Reset to readonly
+    inputs.forEach(input => {
+        if (input.id !== 'username' && input.id !== 'user_type') {
+            input.setAttribute('readonly', 'true');
+            input.classList.remove('border-warning');
+        }
+    });
+    
+    editButtons.classList.add('d-none');
+    toggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Edit Profile';
+    toggleBtn.classList.remove('btn-outline-danger');
+    toggleBtn.classList.add('btn-outline-success');
+    toggleBtn.setAttribute('onclick', 'toggleEditMode()');
+    
+    // Reset form values (you might want to restore original values here)
+    form.reset();
+}
+
+// Password strength indicator
+document.getElementById('new_password1').addEventListener('input', function() {
+    const password = this.value;
+    const strength = calculatePasswordStrength(password);
+    // Add visual feedback for password strength
+});
+
+function calculatePasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/)) strength++;
+    if (password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    return strength;
+}
+
+// Confirm password match
+document.getElementById('new_password2').addEventListener('input', function() {
+    const password1 = document.getElementById('new_password1').value;
+    const password2 = this.value;
+    
+    if (password2 && password1 !== password2) {
+        this.setCustomValidity('Passwords do not match');
+        this.classList.add('is-invalid');
+    } else {
+        this.setCustomValidity('');
+        this.classList.remove('is-invalid');
+    }
+});
+</script>
+{% endblock %}
