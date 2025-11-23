@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Requests - EcoTracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-list me-2 text-success"></i>
+                    My Recycling Requests
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'create_request' %}" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>New Request
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Filter by Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                {% for status_key, status_name in status_choices %}
+                                    <option value="{{ status_key }}" {% if selected_status == status_key %}selected{% endif %}>
+                                        {{ status_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-filter me-1"></i>Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requests List -->
+    <div class="row">
+        {% if requests %}
+            {% for request in requests %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0 hover-lift">
+                        {% if request.item_image %}
+                            <img src="{{ request.item_image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="Request image">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">{{ request.get_material_type_display }}</h5>
+                                <span class="badge bg-{% if request.status == 'pending' %}warning{% elif request.status == 'approved' %}success{% elif request.status == 'completed' %}primary{% elif request.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                    {{ request.get_status_display }}
+                                </span>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">{{ request.item_description|truncatechars:100 }}</p>
+                            
+                            <div class="mb-3">
+                                <p class="mb-1">
+                                    <i class="fas fa-building text-success me-2"></i>
+                                    <small><strong>Center:</strong> {{ request.recycling_center.name }}</small>
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-calendar text-success me-2"></i>
+                                    <small><strong>Submitted:</strong> {{ request.created_at|date:"M d, Y" }}</small>
+                                </p>
+                                <p class="mb-1">
+                                    <i class="fas fa-weight text-success me-2"></i>
+                                    <small><strong>Quantity:</strong> {{ request.quantity }} item{{ request.quantity|pluralize }}</small>
+                                </p>
+                                {% if request.estimated_weight %}
+                                <p class="mb-1">
+                                    <i class="fas fa-balance-scale text-success me-2"></i>
+                                    <small><strong>Weight:</strong> {{ request.estimated_weight }} kg</small>
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Progress Timeline -->
+                            <div class="mb-3">
+                                <small class="text-muted d-block mb-2">Progress:</small>
+                                <div class="progress" style="height: 6px;">
+                                    {% if request.status == 'pending' %}
+                                        <div class="progress-bar bg-warning" style="width: 25%"></div>
+                                    {% elif request.status == 'approved' %}
+                                        <div class="progress-bar bg-success" style="width: 50%"></div>
+                                    {% elif request.status == 'completed' %}
+                                        <div class="progress-bar bg-primary" style="width: 100%"></div>
+                                    {% elif request.status == 'rejected' %}
+                                        <div class="progress-bar bg-danger" style="width: 100%"></div>
+                                    {% else %}
+                                        <div class="progress-bar bg-secondary" style="width: 10%"></div>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">Submitted</small>
+                                    {% if request.status != 'rejected' %}
+                                    <small class="text-muted">Approved</small>
+                                    <small class="text-muted">Completed</small>
+                                    {% else %}
+                                    <small class="text-danger">Rejected</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Status-specific information -->
+                            {% if request.status == 'approved' and request.approved_at %}
+                                <div class="alert alert-success alert-sm">
+                                    <small>
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Approved on {{ request.approved_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            {% elif request.status == 'completed' and request.completed_at %}
+                                <div class="alert alert-primary alert-sm">
+                                    <small>
+                                        <i class="fas fa-star me-1"></i>
+                                        Completed on {{ request.completed_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            {% elif request.status == 'rejected' and request.staff_notes %}
+                                <div class="alert alert-danger alert-sm">
+                                    <small>
+                                        <i class="fas fa-times-circle me-1"></i>
+                                        Rejected: {{ request.staff_notes|truncatechars:50 }}
+                                    </small>
+                                </div>
+                            {% endif %}
+
+                            <!-- Actions -->
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'request_detail' request.id %}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-eye me-1"></i>View Details
+                                    </a>
+                                    
+                                    {% if request.status == 'pending' %}
+                                        <small class="text-muted align-self-center">
+                                            <i class="fas fa-clock me-1"></i>Pending Review
+                                        </small>
+                                    {% elif request.status == 'approved' %}
+                                        <small class="text-success align-self-center">
+                                            <i class="fas fa-truck me-1"></i>Ready for Pickup
+                                        </small>
+                                    {% elif request.status == 'completed' %}
+                                        <small class="text-primary align-self-center">
+                                            <i class="fas fa-check-double me-1"></i>Recycled
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">No requests found</h4>
+                        <p class="text-muted mb-4">
+                            {% if selected_status %}
+                                No requests with status "{{ selected_status|title }}" found.
+                            {% else %}
+                                You haven't created any recycling requests yet.
+                            {% endif %}
+                        </p>
+                        <div class="d-flex justify-content-center gap-2">
+                            {% if selected_status %}
+                                <a href="{% url 'my_requests' %}" class="btn btn-outline-success">
+                                    <i class="fas fa-times me-1"></i>Clear Filter
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'create_request' %}" class="btn btn-success">
+                                <i class="fas fa-plus me-1"></i>Create Your First Request
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Summary Stats -->
+    {% if requests %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h6 class="text-success mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>Request Summary
+                    </h6>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h5 class="text-primary mb-1">{{ requests.count }}</h5>
+                                <small class="text-muted">Total Requests</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h5 class="text-warning mb-1">{{ pending_count }}</h5>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h5 class="text-success mb-1">{{ completed_count }}</h5>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-info mb-1">{{ user.userprofile.total_items_recycled|default:0 }}</h5>
+                            <small class="text-muted">Items Recycled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    .col-lg-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .border-end {
+        border-end: none !important;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .border-end:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0;
+    }
+}
+</style>
+{% endblock %}

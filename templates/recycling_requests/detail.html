@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Request #{{ recycling_request.id }} - EcoTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'my_requests' %}">My Requests</a></li>
+                    <li class="breadcrumb-item active">Request #{{ recycling_request.id }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-recycle me-2"></i>
+                            Request #{{ recycling_request.id }}
+                        </h4>
+                        <span class="badge bg-{% if recycling_request.status == 'pending' %}warning{% elif recycling_request.status == 'approved' %}success{% elif recycling_request.status == 'completed' %}primary{% elif recycling_request.status == 'rejected' %}danger{% else %}secondary{% endif %} fs-6">
+                            {{ recycling_request.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Request Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            {% if recycling_request.item_image %}
+                                <img src="{{ recycling_request.item_image.url }}" class="img-fluid rounded shadow-sm mb-3" alt="Request image" style="max-height: 300px; width: 100%; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px;">
+                                    <i class="fas fa-image fa-4x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="text-success mb-3">Request Details</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <strong>Material Type:</strong> {{ recycling_request.get_material_type_display }}
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Quantity:</strong> {{ recycling_request.quantity }} item{{ recycling_request.quantity|pluralize }}
+                                </li>
+                                {% if recycling_request.estimated_weight %}
+                                <li class="mb-2">
+                                    <strong>Estimated Weight:</strong> {{ recycling_request.estimated_weight }} kg
+                                </li>
+                                {% endif %}
+                                <li class="mb-2">
+                                    <strong>Priority:</strong> {{ recycling_request.get_priority_display }}
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Submitted:</strong> {{ recycling_request.created_at|date:"F d, Y \a\t g:i A" }}
+                                </li>
+                                {% if recycling_request.preferred_pickup_date %}
+                                <li class="mb-2">
+                                    <strong>Preferred Pickup:</strong> {{ recycling_request.preferred_pickup_date|date:"F d, Y \a\t g:i A" }}
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Item Description</h5>
+                        <p class="text-muted">{{ recycling_request.item_description }}</p>
+                        
+                        {% if recycling_request.notes %}
+                        <h6 class="text-success mb-2 mt-3">Additional Notes</h6>
+                        <p class="text-muted">{{ recycling_request.notes }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Recycling Center Info -->
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Recycling Center</h5>
+                        <div class="card border-success border-opacity-25">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ recycling_request.recycling_center.name }}</h6>
+                                <p class="card-text mb-2">
+                                    <i class="fas fa-map-marker-alt text-success me-2"></i>
+                                    {{ recycling_request.recycling_center.address }}
+                                </p>
+                                <p class="card-text mb-2">
+                                    <i class="fas fa-phone text-success me-2"></i>
+                                    <a href="tel:{{ recycling_request.recycling_center.phone_number }}" class="text-decoration-none">
+                                        {{ recycling_request.recycling_center.phone_number }}
+                                    </a>
+                                </p>
+                                <a href="{% url 'recycling_center_detail' recycling_request.recycling_center.id %}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-info-circle me-1"></i>View Center Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pickup Information -->
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Pickup Information</h5>
+                        <div class="card border-info border-opacity-25">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-map-marker-alt text-info me-2"></i>
+                                    Pickup Address
+                                </h6>
+                                <p class="card-text">{{ recycling_request.pickup_address }}</p>
+                                {% if recycling_request.preferred_pickup_date %}
+                                <h6 class="card-title mt-3">
+                                    <i class="fas fa-calendar text-info me-2"></i>
+                                    Preferred Date & Time
+                                </h6>
+                                <p class="card-text">{{ recycling_request.preferred_pickup_date|date:"l, F d, Y \a\t g:i A" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Staff Notes (if any) -->
+                    {% if recycling_request.staff_notes %}
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Staff Notes</h5>
+                        <div class="alert alert-info">
+                            <i class="fas fa-comment-alt me-2"></i>
+                            {{ recycling_request.staff_notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Approval Information -->
+                    {% if recycling_request.approved_by %}
+                    <div class="mb-4">
+                        <h5 class="text-success mb-3">Approval Information</h5>
+                        <div class="card border-success border-opacity-25">
+                            <div class="card-body">
+                                <p class="card-text mb-1">
+                                    <strong>Approved by:</strong> {{ recycling_request.approved_by.get_full_name|default:recycling_request.approved_by.username }}
+                                </p>
+                                <p class="card-text mb-0">
+                                    <strong>Approved on:</strong> {{ recycling_request.approved_at|date:"F d, Y \a\t g:i A" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Completion Information -->
+                    {% if recycling_request.completed_at %}
+                    <div class="mb-4">
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Recycling Completed!
+                            </h5>
+                            <p class="mb-0">
+                                Your items were successfully recycled on {{ recycling_request.completed_at|date:"F d, Y" }}. 
+                                Thank you for contributing to a sustainable future!
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Progress Tracking -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-route me-2"></i>Progress Tracking
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for tracking in tracking_history %}
+                            <div class="timeline-item {% if forloop.first %}active{% endif %}">
+                                <div class="timeline-marker bg-{% if tracking.status == 'submitted' %}secondary{% elif tracking.status == 'approved' %}success{% elif tracking.status == 'completed' %}primary{% elif tracking.status == 'rejected' %}danger{% else %}info{% endif %}"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">{{ tracking.get_status_display }}</h6>
+                                    <p class="timeline-description">{{ tracking.description }}</p>
+                                    <small class="timeline-time text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ tracking.timestamp|date:"M d, Y g:i A" }}
+                                    </small>
+                                    {% if tracking.updated_by %}
+                                    <small class="d-block text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ tracking.updated_by.get_full_name|default:tracking.updated_by.username }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'my_requests' %}" class="btn btn-outline-success">
+                            <i class="fas fa-arrow-left me-1"></i>Back to My Requests
+                        </a>
+                        
+                        {% if recycling_request.status == 'pending' %}
+                        <button class="btn btn-outline-warning" disabled>
+                            <i class="fas fa-hourglass-half me-1"></i>Awaiting Review
+                        </button>
+                        {% elif recycling_request.status == 'approved' %}
+                        <button class="btn btn-outline-success" disabled>
+                            <i class="fas fa-truck me-1"></i>Ready for Pickup
+                        </button>
+                        {% elif recycling_request.status == 'completed' %}
+                        <a href="{% url 'create_request' %}" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>Create New Request
+                        </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-info" onclick="shareRequest()">
+                            <i class="fas fa-share-alt me-1"></i>Share Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Environmental Impact -->
+            {% if recycling_request.status == 'completed' %}
+            <div class="card shadow-sm border-0 bg-success text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-title">
+                        <i class="fas fa-leaf me-2"></i>Environmental Impact
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <h4>{{ recycling_request.estimated_weight|default:1|floatformat:1 }}</h4>
+                            <small>kg Recycled</small>
+                        </div>
+                        <div class="col-6">
+                            <h4>{{ recycling_request.estimated_weight|default:1|mul:2.2|floatformat:1 }}</h4>
+                            <small>kg CO₂ Saved</small>
+                        </div>
+                    </div>
+                    <small class="d-block mt-2 opacity-75">
+                        Every kilogram recycled makes a difference!
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 3px var(--bs-gray-300);
+}
+
+.timeline-item.active .timeline-marker {
+    box-shadow: 0 0 0 3px var(--bs-primary);
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    position: relative;
+}
+
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #f8f9fa;
+}
+
+.timeline-title {
+    margin-bottom: 0.5rem;
+    color: #495057;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.timeline-description {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.timeline-time {
+    font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 1.5rem;
+    }
+    
+    .timeline-marker {
+        left: -1.25rem;
+    }
+    
+    .col-lg-4 {
+        margin-top: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function shareRequest() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Recycling Request #{{ recycling_request.id }}',
+            text: 'Check out my recycling request for {{ recycling_request.get_material_type_display }}',
+            url: window.location.href
+        });
+    } else {
+        // Fallback to clipboard
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Recycling Request - EcoTracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Create Recycling Request
+                    </h3>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" data-validate="true" id="requestForm">
+                        {% csrf_token %}
+                        
+                        <!-- Recycling Center Selection -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="recycling_center" class="form-label fw-bold">
+                                    <i class="fas fa-building me-1 text-success"></i>
+                                    Select Recycling Center *
+                                </label>
+                                <select name="recycling_center" id="recycling_center" class="form-select" required>
+                                    <option value="">Choose a recycling center...</option>
+                                    {% for center in centers %}
+                                        <option value="{{ center.id }}" 
+                                                data-lat="{{ center.latitude }}" 
+                                                data-lng="{{ center.longitude }}"
+                                                data-materials="{{ center.accepted_materials.all|join:',' }}">
+                                            {{ center.name }} - {{ center.address }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Can't find a suitable center? <a href="{% url 'recycling_centers_list' %}" target="_blank">Browse all centers</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Material Type -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="material_type" class="form-label fw-bold">
+                                    <i class="fas fa-recycle me-1 text-success"></i>
+                                    Material Type *
+                                </label>
+                                <select name="material_type" id="material_type" class="form-select" required>
+                                    <option value="">Select material type...</option>
+                                    {% for type_key, type_name in material_types %}
+                                        <option value="{{ type_key }}">{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label for="quantity" class="form-label fw-bold">
+                                    <i class="fas fa-hashtag me-1 text-success"></i>
+                                    Quantity *
+                                </label>
+                                <input type="number" name="quantity" id="quantity" class="form-control" 
+                                       min="1" value="1" required>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label for="estimated_weight" class="form-label fw-bold">
+                                    <i class="fas fa-weight me-1 text-success"></i>
+                                    Weight (kg)
+                                </label>
+                                <input type="number" name="estimated_weight" id="estimated_weight" 
+                                       class="form-control" min="0" step="0.1" placeholder="0.0">
+                            </div>
+                        </div>
+
+                        <!-- Item Description -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="item_description" class="form-label fw-bold">
+                                    <i class="fas fa-align-left me-1 text-success"></i>
+                                    Item Description *
+                                </label>
+                                <textarea name="item_description" id="item_description" class="form-control" 
+                                          rows="4" required placeholder="Please describe the items you want to recycle..."></textarea>
+                                <div class="form-text">
+                                    Be specific about the condition, size, and any special requirements.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="item_image" class="form-label fw-bold">
+                                    <i class="fas fa-camera me-1 text-success"></i>
+                                    Item Photo *
+                                </label>
+                                <div class="file-upload">
+                                    <input type="file" name="item_image" id="item_image" 
+                                           accept="image/*" required data-preview="imagePreview">
+                                    <div class="text-center">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-success mb-3"></i>
+                                        <p class="mb-0">Click to upload or drag & drop</p>
+                                        <small class="text-muted">PNG, JPG, GIF up to 10MB</small>
+                                    </div>
+                                </div>
+                                <img id="imagePreview" class="image-preview mt-3" style="display: none;" alt="Preview">
+                            </div>
+                        </div>
+
+                        <!-- Pickup Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-success mb-3">
+                                    <i class="fas fa-truck me-2"></i>
+                                    Pickup Information
+                                </h5>
+                            </div>
+                            
+            <div class="col-12 mb-3">
+                <label for="pickup_address" class="form-label fw-bold">
+                    <i class="fas fa-map-marker-alt me-1 text-success"></i>
+                    Pickup Address *
+                </label>
+                <textarea name="pickup_address" id="pickup_address" class="form-control" 
+                          rows="3" required placeholder="Enter the complete pickup address..."
+                          data-autocomplete="address"></textarea>
+                <input type="hidden" name="pickup_latitude" id="pickup_address_latitude">
+                <input type="hidden" name="pickup_longitude" id="pickup_address_longitude">
+                <div class="form-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Start typing to see address suggestions (if available), or enter manually.
+                </div>
+            </div>                            <div class="col-md-6">
+                                <label for="preferred_pickup_date" class="form-label fw-bold">
+                                    <i class="fas fa-calendar me-1 text-success"></i>
+                                    Preferred Pickup Date *
+                                </label>
+                                <input type="datetime-local" name="preferred_pickup_date" 
+                                       id="preferred_pickup_date" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <!-- Additional Notes -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="notes" class="form-label fw-bold">
+                                    <i class="fas fa-sticky-note me-1 text-success"></i>
+                                    Additional Notes
+                                </label>
+                                <textarea name="notes" id="notes" class="form-control" rows="3" 
+                                          placeholder="Any additional information or special instructions..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-1"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-success btn-lg px-4">
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        Submit Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Panel -->
+        <div class="col-lg-4">
+            <div class="card border-0 bg-light">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Need Help?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-info">📋 What to Include</h6>
+                        <ul class="small text-muted">
+                            <li>Clear photos of items</li>
+                            <li>Detailed descriptions</li>
+                            <li>Accurate weight estimates</li>
+                            <li>Complete pickup address</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-info">♻️ Accepted Materials</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-success">Plastic</span>
+                            <span class="badge bg-success">Glass</span>
+                            <span class="badge bg-success">Paper</span>
+                            <span class="badge bg-success">Metal</span>
+                            <span class="badge bg-success">Electronic</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-info">🕒 Processing Time</h6>
+                        <p class="small text-muted">
+                            Most requests are reviewed within 24 hours. 
+                            You'll receive notifications about status updates.
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            This is a <strong>free service</strong>! We're committed to making recycling accessible to everyone.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.file-upload {
+    position: relative;
+    display: block;
+    cursor: pointer;
+    border: 2px dashed #28a745;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    background-color: rgba(40, 167, 69, 0.05);
+    transition: all 0.3s ease;
+}
+
+.file-upload:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-color: #1e7e34;
+}
+
+.file-upload input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+}
+
+.image-preview {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 10px;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.form-label.fw-bold {
+    color: #495057;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+@media (max-width: 768px) {
+    .col-lg-4 {
+        margin-top: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().slice(0, 16);
+    document.getElementById('preferred_pickup_date').min = minDate;
+    
+    // Image preview functionality
+    const fileInput = document.getElementById('item_image');
+    const preview = document.getElementById('imagePreview');
+    
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+    
+    // Drag and drop functionality
+    const fileUpload = document.querySelector('.file-upload');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileUpload.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        fileUpload.style.backgroundColor = 'rgba(40, 167, 69, 0.15)';
+    }
+    
+    function unhighlight(e) {
+        fileUpload.style.backgroundColor = 'rgba(40, 167, 69, 0.05)';
+    }
+    
+    fileUpload.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+    
+    // Form validation
+    document.getElementById('requestForm').addEventListener('submit', function(e) {
+        const requiredFields = this.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            // Skip file inputs and disabled fields from validation display
+            if (field.type === 'file' || field.disabled) {
+                return;
+            }
+            
+            // Get the field value, handling different field types
+            let value = '';
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                value = field.checked ? 'checked' : '';
+            } else {
+                value = field.value ? field.value.trim() : '';
+            }
+            
+            if (!value) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            }
+        });
+        
+        // Special validation for pickup_address - ensure it's not empty and not disabled
+        const pickupAddress = document.getElementById('pickup_address');
+        if (pickupAddress) {
+            // Re-enable field if it was disabled by Google Maps autocomplete
+            pickupAddress.disabled = false;
+            pickupAddress.removeAttribute('disabled');
+            
+            if (!pickupAddress.value || !pickupAddress.value.trim()) {
+                pickupAddress.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                pickupAddress.classList.remove('is-invalid');
+                pickupAddress.classList.add('is-valid');
+            }
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            if (typeof EcoTracker !== 'undefined' && typeof EcoTracker.showToast === 'function') {
+                EcoTracker.showToast('Please fill in all required fields.', 'danger');
+            } else {
+                alert('Please fill in all required fields.');
+            }
+            // Scroll to first invalid field
+            const firstInvalid = this.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+        }
+    });
+});
+</script>
+
+<!-- Google Maps API for address autocomplete -->
+<script async defer 
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places&callback=initAutocomplete">
+</script>
+
+<script>
+function initAutocomplete() {
+    // Initialize address autocomplete when Google Maps loads
+    const addressInput = document.getElementById('pickup_address');
+    if (addressInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+        try {
+            const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                types: ['address'],
+                componentRestrictions: { country: 'ca' } // Restrict to Canada, change as needed
+            });
+            
+            // Ensure the field never gets disabled
+            addressInput.disabled = false;
+            
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                
+                // Make sure the field is still enabled
+                addressInput.disabled = false;
+                
+                if (place.geometry) {
+                    // Update coordinates
+                    document.getElementById('pickup_address_latitude').value = place.geometry.location.lat();
+                    document.getElementById('pickup_address_longitude').value = place.geometry.location.lng();
+                    
+                    // Update address field with formatted address if available
+                    if (place.formatted_address) {
+                        addressInput.value = place.formatted_address;
+                    }
+                } else {
+                    console.warn('No geometry found for selected place');
+                }
+            });
+            
+            // Prevent Enter key from submitting form while selecting autocomplete
+            addressInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const pacContainers = document.querySelectorAll('.pac-container');
+                    let isAutocompleteVisible = false;
+                    pacContainers.forEach(container => {
+                        if (container.style.display !== 'none' && container.offsetParent !== null) {
+                            isAutocompleteVisible = true;
+                        }
+                    });
+                    
+                    if (isAutocompleteVisible) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing Google Maps autocomplete:', error);
+            // Ensure field remains usable even if autocomplete fails
+            addressInput.disabled = false;
+        }
+    } else {
+        console.log('Google Maps API not loaded. Address autocomplete disabled.');
+        // Make sure the field is still usable without autocomplete
+        if (addressInput) {
+            addressInput.disabled = false;
+        }
+    }
+}
+
+// Also initialize on DOM load if Google Maps is already loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Try to initialize autocomplete if Google is already loaded
+    if (typeof google !== 'undefined') {
+        initAutocomplete();
+    }
+    
+    // Ensure pickup_address field is never disabled
+    const pickupAddress = document.getElementById('pickup_address');
+    if (pickupAddress) {
+        // Monitor for any changes to the disabled attribute
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'disabled' && pickupAddress.disabled) {
+                    console.warn('pickup_address was disabled, re-enabling...');
+                    pickupAddress.disabled = false;
+                }
+            });
+        });
+        
+        observer.observe(pickupAddress, {
+            attributes: true,
+            attributeFilter: ['disabled']
+        });
+    }
+});
+</script>
+{% endblock %}
