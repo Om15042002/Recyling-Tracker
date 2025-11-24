@@ -110,7 +110,7 @@
             </div>
 
             <!-- Map -->
-            <div id="map"></div>
+            <div id="center-map" data-lat="{{ map_center_lat|default:42.3149 }}" data-lng="{{ map_center_lng|default:-82.9891 }}" style="height:600px;"></div>
         </div>
     </div>
 
@@ -158,7 +158,7 @@
 
 <script>
     // Initialize map centered on Windsor, Canada
-    const map = L.map('map').setView([42.3149, -82.9891], 11);
+    const map = L.map('center-map').setView([42.3149, -82.9891], 11);
 
     // Add OpenStreetMap tiles (free)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
