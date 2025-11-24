@@ -1,0 +1,405 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Recycling Centers Map - EcoTracker{% endblock %} {% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .map-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        max-width: 300px;
+    }
+    
+    .custom-popup {
+        font-size: 14px;
+    }
+    
+    .custom-popup h6 {
+        color: #28a745;
+        margin-bottom: 8px;
+    }
+    
+    .distance-info {
+        background: #e8f5e8;
+        padding: 8px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+    
+    .material-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 5px;
+    }
+    
+    .material-tag {
+        background: #d4edda;
+        color: #155724;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.7em;
+        font-weight: 500;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-map me-2 text-success"></i> Recycling Centers Map
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'recycling_centers_list' %}" class="btn btn-outline-success">
+                            <i class="fas fa-list me-1"></i>List View
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="row">
+        <div class="col-12 position-relative">
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <h6 class="text-success mb-3">
+                    <i class="fas fa-filter me-1"></i>Filter Centers
+                </h6>
+
+                <form id="mapFilters">
+                    <div class="mb-3">
+                        <label for="materialFilter" class="form-label">Material Type</label>
+                        <select class="form-select form-select-sm" id="materialFilter">
+                            <option value="">All Materials</option>
+                            {% for type_key, type_name in material_types %}
+                                <option value="{{ type_key }}" {% if selected_material == type_key %}selected{% endif %}>
+                                    {{ type_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success btn-sm w-100" onclick="getCurrentLocation()">
+                            <i class="fas fa-location-arrow me-1"></i>Find My Location
+                        </button>
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Click markers for details
+                        </small>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Map -->
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-success mb-3">
+                        <i class="fas fa-map-signs me-1"></i>Map Legend
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2" style="width: 20px; height: 20px; background: #28a745; border-radius: 50%;"></div>
+                                <small>High Availability (70%+)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2" style="width: 20px; height: 20px; background: #ffc107; border-radius: 50%;"></div>
+                                <small>Medium Availability (40-70%)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2" style="width: 20px; height: 20px; background: #dc3545; border-radius: 50%;"></div>
+                                <small>Low Availability (<40%)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2" style="width: 20px; height: 20px; background: #007bff; border-radius: 50%;"></div>
+                                <small>Your Location</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+    // Initialize map centered on Windsor, Canada
+    const map = L.map('map').setView([42.3149, -82.9891], 11);
+
+    // Add OpenStreetMap tiles (free)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Centers data from Django
+    const centersData = {
+        {
+            centers_json | safe
+        }
+    };
+
+    // User location marker
+    let userLocationMarker = null;
+
+    // Store all markers for filtering
+    let allMarkers = [];
+
+    // Function to get marker color based on availability
+    function getMarkerColor(availability) {
+        if (availability >= 70) return '#28a745'; // Green
+        if (availability >= 40) return '#ffc107'; // Yellow
+        return '#dc3545'; // Red
+    }
+
+    // Function to create custom icon
+    function createCustomIcon(color) {
+        return L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+            popupAnchor: [0, -10]
+        });
+    }
+
+    // Function to calculate distance between two points
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Function to add centers to map
+    function addCentersToMap(centers, userLat = null, userLon = null) {
+        // Clear existing markers
+        allMarkers.forEach(marker => map.removeLayer(marker));
+        allMarkers = [];
+
+        centers.forEach(center => {
+            const color = getMarkerColor(center.availability_percentage);
+            const icon = createCustomIcon(color);
+
+            let popupContent = `
+            <div class="custom-popup">
+                <h6>${center.name}</h6>
+                <p class="mb-2"><i class="fas fa-map-marker-alt text-success me-1"></i>${center.address}</p>
+                <p class="mb-2"><i class="fas fa-phone text-success me-1"></i>${center.phone_number}</p>
+        `;
+
+            // Add distance if user location is available
+            if (userLat && userLon) {
+                const distance = calculateDistance(userLat, userLon, center.latitude, center.longitude);
+                popupContent += `
+                <div class="distance-info">
+                    <i class="fas fa-route me-1"></i>
+                    Distance: <strong>${distance.toFixed(1)} km</strong>
+                </div>
+            `;
+            }
+
+            popupContent += `
+                <div class="mb-2">
+                    <small class="text-muted">Availability:</small>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar" style="width: ${center.availability_percentage}%; background-color: ${color}"></div>
+                    </div>
+                    <small>${center.availability_percentage.toFixed(1)}%</small>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Accepted Materials:</small>
+                    <div class="material-tags">
+        `;
+
+            center.accepted_materials.forEach(material => {
+                popupContent += `<span class="material-tag">${material.charAt(0).toUpperCase() + material.slice(1)}</span>`;
+            });
+
+            popupContent += `
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a href="/centers/${center.id}/" class="btn btn-success btn-sm me-1">
+                        <i class="fas fa-info-circle me-1"></i>Details
+                    </a>
+        `;
+
+            if ({
+                    {
+                        user.is_authenticated | yesno: "true,false"
+                    }
+                }) {
+                popupContent += `
+                    <a href="/requests/create/?center=${center.id}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus me-1"></i>Request
+                    </a>
+            `;
+            }
+
+            popupContent += `
+                </div>
+            </div>
+        `;
+
+            const marker = L.marker([center.latitude, center.longitude], {
+                    icon: icon
+                })
+                .addTo(map)
+                .bindPopup(popupContent, {
+                    maxWidth: 300,
+                    className: 'custom-popup-container'
+                });
+
+            // Add center data to marker for filtering
+            marker.centerData = center;
+            allMarkers.push(marker);
+        });
+    }
+
+    // Function to filter centers by material type
+    function filterCenters() {
+        const materialFilter = document.getElementById('materialFilter').value;
+
+        allMarkers.forEach(marker => {
+            const center = marker.centerData;
+            let showMarker = true;
+
+            if (materialFilter && !center.accepted_materials.includes(materialFilter)) {
+                showMarker = false;
+            }
+
+            if (showMarker) {
+                marker.addTo(map);
+            } else {
+                map.removeLayer(marker);
+            }
+        });
+    }
+
+    // Function to get user's current location
+    function getCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by this browser.');
+            return;
+        }
+
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Locating...';
+        button.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Remove existing user location marker
+                if (userLocationMarker) {
+                    map.removeLayer(userLocationMarker);
+                }
+
+                // Add user location marker
+                const userIcon = createCustomIcon('#007bff');
+                userLocationMarker = L.marker([lat, lng], {
+                        icon: userIcon
+                    })
+                    .addTo(map)
+                    .bindPopup(`
+                    <div class="custom-popup">
+                        <h6><i class="fas fa-user-circle me-1"></i>Your Location</h6>
+                        <p class="mb-0">Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}</p>
+                    </div>
+                `);
+
+                // Center map on user location
+                map.setView([lat, lng], 13);
+
+                // Refresh centers with distance calculation
+                addCentersToMap(centersData, lat, lng);
+                filterCenters();
+
+                button.innerHTML = originalText;
+                button.disabled = false;
+            },
+            function(error) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+
+                let message = 'Unable to get your location: ';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        message += 'Please allow location access.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        message += 'Location request timed out.';
+                        break;
+                    default:
+                        message += 'An unknown error occurred.';
+                        break;
+                }
+                alert(message);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000
+            }
+        );
+    }
+
+    // Initialize map with centers
+    document.addEventListener('DOMContentLoaded', function() {
+        addCentersToMap(centersData);
+
+        // Add event listener for material filter
+        document.getElementById('materialFilter').addEventListener('change', filterCenters);
+
+        // Set initial filter if provided
+        const initialFilter = '{{ selected_material }}';
+        if (initialFilter) {
+            document.getElementById('materialFilter').value = initialFilter;
+            filterCenters();
+        }
+    });
+</script>
+{% endblock %}

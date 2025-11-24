@@ -1,0 +1,262 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Find Recycling Centers - EcoTracker{% endblock %} {% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-map-marker-alt me-2 text-success"></i> Find Recycling Centers
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <a href="{% url 'recycling_centers_map' %}" class="btn btn-outline-success">
+                            <i class="fas fa-map me-1"></i>Map View
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Search Centers</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Search by name or address...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="material_type" class="form-label">Material Type</label>
+                            <select class="form-select" id="material_type" name="material_type">
+                                <option value="">All Materials</option>
+                                {% for type_key, type_name in material_types %}
+                                    <option value="{{ type_key }}" {% if selected_material == type_key %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-search me-1"></i>Search
+                            </button>
+                            <button type="button" class="btn btn-outline-info" onclick="getUserLocationAndSearch()">
+                                <i class="fas fa-location-arrow me-1"></i>Near Me
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row">
+        {% if centers %} {% for center in centers %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 hover-lift">
+                {% if center.image_url %}
+                <img src="{{ center.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ center.name }}"> {% else %}
+                <div class="card-img-top bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <i class="fas fa-recycle fa-4x text-success opacity-50"></i>
+                </div>
+                {% endif %}
+
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ center.name }}</h5>
+                        {% if center.distance %}
+                        <span class="distance-badge">{{ center.distance }} km</span> {% endif %}
+                    </div>
+
+                    <p class="card-text text-muted mb-3">{{ center.description|truncatechars:100 }}</p>
+
+                    <div class="mb-3">
+                        <p class="mb-1">
+                            <i class="fas fa-map-marker-alt text-success me-2"></i>
+                            <small>{{ center.address }}</small>
+                        </p>
+                        <p class="mb-1">
+                            <i class="fas fa-phone text-success me-2"></i>
+                            <small>{{ center.phone_number }}</small>
+                        </p>
+                        <p class="mb-1">
+                            <i class="fas fa-envelope text-success me-2"></i>
+                            <small>{{ center.email }}</small>
+                        </p>
+                    </div>
+
+                    <!-- Availability -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Availability</small>
+                            <small class="fw-bold">{{ center.availability_percentage|floatformat:1 }}%</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar 
+                                        {% if center.availability_percentage >= 70 %}bg-success
+                                        {% elif center.availability_percentage >= 40 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" style="width: {{ center availability_percentage }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Accepted Materials -->
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">Accepted Materials:</small>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for material in center.accepted_materials %}
+                            <span class="material-tag">{{ material.type|title }}</span> {% empty %}
+                            <small class="text-muted">No materials specified</small> {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-auto">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <a href="{% url 'recycling_center_detail' center.id %}" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="fas fa-info-circle me-1"></i>Details
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                {% if user.is_authenticated %}
+                                <a href="{% url 'create_request' %}?center={{ center.id }}" class="btn btn-success btn-sm w-100">
+                                    <i class="fas fa-plus me-1"></i>Request
+                                </a>
+                                {% else %}
+                                <a href="{% url 'login' %}" class="btn btn-success btn-sm w-100">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %} {% else %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted mb-3">No recycling centers found</h4>
+                    <p class="text-muted mb-4">
+                        {% if search_query or selected_material %} Try adjusting your search criteria or {% else %} We couldn't find any recycling centers in your area. {% endif %}
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        {% if search_query or selected_material %}
+                        <a href="{% url 'recycling_centers_list' %}" class="btn btn-outline-success">
+                            <i class="fas fa-times me-1"></i>Clear Filters
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'recycling_centers_map' %}" class="btn btn-success">
+                            <i class="fas fa-map me-1"></i>View Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination would go here if needed -->
+</div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .distance-badge {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .material-tag {
+        display: inline-block;
+        background-color: #d4edda;
+        color: #155724;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .col-lg-6 {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %} {% block extra_js %}
+<script>
+    function getUserLocationAndSearch() {
+        if (!navigator.geolocation) {
+            EcoTracker.showToast('Geolocation is not supported by this browser.', 'danger');
+            return;
+        }
+
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Locating...';
+        button.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Add location parameters to current search
+                const form = document.querySelector('form');
+                const formData = new FormData(form);
+                const params = new URLSearchParams();
+
+                for (let [key, value] of formData.entries()) {
+                    if (value) params.append(key, value);
+                }
+
+                params.append('lat', lat);
+                params.append('lon', lng);
+
+                window.location.href = `${window.location.pathname}?${params.toString()}`;
+            },
+            function(error) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+
+                let message = 'Unable to get your location. ';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        message += 'Please allow location access.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        message += 'Location request timed out.';
+                        break;
+                    default:
+                        message += 'An unknown error occurred.';
+                        break;
+                }
+                EcoTracker.showToast(message, 'danger');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000
+            }
+        );
+    }
+</script>
+{% endblock %}
