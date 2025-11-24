@@ -153,17 +153,26 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
     // Pass centers JSON and selected material to the map script
-    window.centersData = {{ centers_json|safe }};
+    window.centersData = {
+        {
+            centers_json | safe
+        }
+    };
     window.selected_material = '{{ selected_material }}';
     // optional flag: whether user is authenticated (template should set this)
-    window.userIsAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+    window.userIsAuthenticated = { %
+        if user.is_authenticated %
+    }
+    true { %
+        else %
+    }
+    false { % endif %
+    };
 </script>
 
 <script src="{% static 'js/map.js' %}"></script>

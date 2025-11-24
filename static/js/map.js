@@ -99,7 +99,8 @@ function filterCenters() {
         const center = marker.centerData;
         let show = true;
         if (materialFilter && !(center.accepted_materials || []).includes(materialFilter)) show = false;
-        if (show) marker.addTo(map); else map.removeLayer(marker);
+        if (show) marker.addTo(map);
+        else map.removeLayer(marker);
     });
 }
 
@@ -107,26 +108,30 @@ function getCurrentLocation(event) {
     if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
     const button = event ? event.target : null;
     const originalText = button ? button.innerHTML : null;
-    if (button) { button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Locating...'; button.disabled = true; }
+    if (button) { button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Locating...';
+        button.disabled = true; }
 
     navigator.geolocation.getCurrentPosition(function(position) {
-        const lat = position.coords.latitude; const lng = position.coords.longitude;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
         if (userLocationMarker) map.removeLayer(userLocationMarker);
         const userIcon = createCustomIcon('#007bff');
         userLocationMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map).bindPopup(`<div class="custom-popup"><h6><i class="fas fa-user-circle me-1"></i>Your Location</h6><p class="mb-0">Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}</p></div>`);
         map.setView([lat, lng], 13);
         addCentersToMap(window.centersData || [], lat, lng);
         filterCenters();
-        if (button) { button.innerHTML = originalText; button.disabled = false; }
+        if (button) { button.innerHTML = originalText;
+            button.disabled = false; }
     }, function(err) {
-        if (button) { button.innerHTML = originalText; button.disabled = false; }
+        if (button) { button.innerHTML = originalText;
+            button.disabled = false; }
         alert('Unable to get your location: ' + (err.message || 'unknown error'));
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
 }
 
 function escapeHtml(str) {
     if (!str) return '';
-    return String(str).replace(/[&"'<>]/g, function (s) { return ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'})[s]; });
+    return String(str).replace(/[&"'<>]/g, function(s) { return ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[s]; });
 }
 
 function capitalize(s) { if (!s) return ''; return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -140,7 +145,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterEl = document.getElementById('materialFilter');
     if (filterEl) filterEl.addEventListener('change', filterCenters);
     const initialFilter = window.selected_material || '';
-    if (initialFilter && filterEl) { filterEl.value = initialFilter; filterCenters(); }
+    if (initialFilter && filterEl) { filterEl.value = initialFilter;
+        filterCenters(); }
     // expose helper globally
     window.getCurrentLocation = getCurrentLocation;
     window.filterCenters = filterCenters;
